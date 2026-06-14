@@ -1,0 +1,12 @@
+allowBuilds:
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false
+# pnpm 설정 파일
+# pnpm 11부터 빌드 스크립트 실행 허용 목록 등의 설정이 이 파일로 이전되었습니다.
+
+# 설치 시 빌드(postinstall) 스크립트 실행을 허용할 패키지 목록
+# - sharp: Next.js 이미지 최적화에 사용되는 네이티브 모듈
+# - unrs-resolver: ESLint 등에서 사용하는 모듈 경로 해석기
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
