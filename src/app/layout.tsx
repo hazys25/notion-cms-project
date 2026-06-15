@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 
 // 본문용 / 코드용 폰트를 CSS 변수로 등록 (globals.css 의 --font-sans, --font-mono 와 연결)
 const geistSans = Geist({
@@ -16,10 +17,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// 브라우저 탭 제목/설명 등 사이트 메타데이터
+// 브라우저 탭 제목/설명 등 사이트 메타데이터 (상수에서 가져와 단일 출처 유지)
 export const metadata: Metadata = {
-  title: "웹 개발 스타터킷",
-  description: "Next.js 15 · TypeScript · Tailwind · shadcn/ui · Supabase · Zustand 기반 스타터킷",
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
 };
 
 export default function RootLayout({
