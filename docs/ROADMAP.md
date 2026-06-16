@@ -22,7 +22,7 @@
 | 1. 프로젝트 기반 | Next.js 15 앱이 로컬에서 돌아가고, 공통 UI/테마 사용 가능 | 3 | ✅ |
 | 2. Notion 연동 기반 | 서버에서 Notion DB를 조회할 수 있고, 연결이 검증됨 | 3 | 🚧 |
 | 3. 글 목록 (홈) | 발행된 글이 홈에 카드 그리드로 표시됨 | 3 | ✅ |
-| 4. 글 상세 | 카드 클릭 시 /posts/[id]에서 본문이 렌더링됨 | 4 | ⏳ |
+| 4. 글 상세 | 카드 클릭 시 /posts/[id]에서 본문이 렌더링됨 | 4 | ✅ |
 | 5. 카테고리 필터 | /category/[category]에서 카테고리별 글 목록을 볼 수 있음 | 2 | ⏳ |
 | 6. 검색 | 제목/태그 키워드 검색으로 글을 걸러낼 수 있음 | 2 | ⏳ |
 | 7. 스타일링 & 최적화 | 반응형/접근성/SEO/캐싱이 정리되어 배포 가능 상태 | 4 | ⏳ |
@@ -116,17 +116,19 @@
 
 ---
 
-## Phase 4: 글 상세 페이지 ⏳
+## Phase 4: 글 상세 페이지 ✅
 
 > /posts/[id]에서 개별 글의 Notion 본문 블록이 렌더링된다. (F-2, PRD §8 단계 4)
+>
+> ℹ️ 코드 완료(lint·build 그린·리뷰 반영). 단, 브라우저에서의 **종단 렌더 확인은 Task 2-3(Notion DB 속성 정합) 해소 후** 가능하다 — 현재 DB 속성명이 PRD §5와 불일치해 조회가 빈 결과/에러로 graceful 처리된다(Phase 3와 동일 선행 조건).
 
-- **Task 4-1: 단건 게시글 조회 함수 구현** ⏳ (필수)
+- **Task 4-1: 단건 게시글 조회 함수 구현** ✅ (필수)
   - 무엇을: `src/lib/server/notion.ts`에 `getPostById(pageId: string): Promise<Post | null>` 추가. `notion.pages.retrieve({ page_id })`로 단건 조회 후 `toPost()`로 변환. Status가 "발행됨"이 아니면 `null` 반환(미발행 글 직접 접근 차단).
   - 완료 기준(DoD): 유효한 Notion 페이지 ID로 호출하면 `Post`를 반환하고, 미발행/없는 ID는 `null`을 반환한다. TypeScript 오류 없음.
   - 의존성: Task 2-3(환경변수 완료), Task 3-1(Post 타입).
   - 근거(PRD): §5 발행 규칙, F-2.
 
-- **Task 4-2: Notion 페이지 블록 조회 및 렌더링 모듈 구현** ⏳ (필수)
+- **Task 4-2: Notion 페이지 블록 조회 및 렌더링 모듈 구현** ✅ (필수)
   - 무엇을: `src/lib/server/notion.ts`에 `getPostBlocks(pageId: string)` 추가 — `notion.blocks.children.list({ block_id: pageId })`로 블록 배열 조회(페이지네이션 처리). `src/components/posts/notion-blocks.tsx` 서버 컴포넌트 — `paragraph`, `heading_1~3`, `bulleted_list_item`, `numbered_list_item`, `code`, `image`, `divider`, `quote` 등 주요 블록 타입을 HTML/Tailwind로 렌더링.
   - 완료 기준(DoD): Notion에서 작성한 본문(단락, 제목, 목록, 이미지 등 주요 블록)이 웹 페이지에 올바르게 렌더링된다. 미지원 블록은 무시(렌더링 안 함)하되 에러를 내지 않는다.
   - 의존성: Task 4-1.
@@ -134,13 +136,13 @@
 
   > 결정(2026-06-16 확정): 본문은 **기본 블록만** 렌더링한다(단락 · 제목 h1~h3 · 불릿/번호 목록 · 이미지 · 인용 · 코드 · 구분선). callout/toggle/table/embed 등 특수 블록은 무시하며 에러를 내지 않는다. MVP에서는 `@notionhq/client` 블록 API를 직접 사용하고, `notion-to-md` 등 서드파티 변환 라이브러리는 도입하지 않는다.
 
-- **Task 4-3: 글 상세 페이지 라우트 구현** ⏳ (필수)
+- **Task 4-3: 글 상세 페이지 라우트 구현** ✅ (필수)
   - 무엇을: `src/app/posts/[id]/page.tsx` — `params.id`로 `getPostById()` 호출, 미발행/없는 글이면 `notFound()`, 정상이면 제목/카테고리/태그/작성일 헤더 + `NotionBlocks` 본문 렌더링. `generateStaticParams`는 선택(필요 시 추가). ISR `revalidate = 60` 적용.
   - 완료 기준(DoD): 홈의 카드 클릭 시 `/posts/[id]`로 이동해 본문이 표시된다. 없는 ID는 404 페이지로 이동한다. `pnpm build`가 통과한다.
   - 의존성: Task 4-2, Task 3-2(카드 링크).
   - 근거(PRD): §6 글 상세 화면, F-2.
 
-- **Task 4-4: 상세 페이지 상단 네비게이션(뒤로 가기)** ⏳ (권장)
+- **Task 4-4: 상세 페이지 상단 네비게이션(뒤로 가기)** ✅ (권장)
   - 무엇을: 글 상세 페이지 상단에 홈(/)으로 돌아가는 "← 목록으로" 링크 추가. Next.js `Link` 컴포넌트 사용(서버 컴포넌트 유지).
   - 완료 기준(DoD): 상세 페이지에서 링크 클릭 시 홈으로 이동한다.
   - 의존성: Task 4-3.
@@ -197,8 +199,9 @@
   - 의존성: Task 4-3, Task 5-2.
   - 근거(PRD): F-5, §7 반응형 디자인.
 
-- **Task 7-2: SEO 메타데이터 설정** ⏳ (권장)
+- **Task 7-2: SEO 메타데이터 설정** 🚧 (권장)
   - 무엇을: `src/app/posts/[id]/page.tsx`에 `generateMetadata` 추가 — 글 제목을 `<title>`로, 카테고리/태그를 `keywords`로, OG 태그(`og:title`, `og:description`) 설정. 홈 `layout.tsx`의 사이트 수준 메타데이터는 `SITE_NAME`/`SITE_DESCRIPTION` 상수에서 이미 가져옴(Task 1-1 완료).
+  - ✅ 일부 선행(Phase 4와 함께): 상세 페이지에 `generateMetadata` 추가됨 — 제목→`title`, 카테고리→`description`, OpenGraph(`title`/`description`/`type: article`). `getCachedPostById`(React `cache()`)로 본문 조회와 메타 조회가 Notion 을 한 번만 호출. 남은 일: `keywords`(태그) 반영·OG 이미지 등 보강 검토.
   - 완료 기준(DoD): 글 상세 페이지를 SNS에 공유하면 글 제목이 OG 미리보기에 표시된다. `pnpm build` 출력에서 해당 경로의 메타데이터 경고가 없다.
   - 의존성: Task 4-3.
   - 근거(PRD): §2.1 탐색 목표(검색엔진 노출 간접 지원).
@@ -258,5 +261,6 @@
 
 ---
 
-**최종 업데이트:** 2026-06-16
-**진행 상황:** Phase 1~3 완료 · Phase 2 일부(Task 2-3) 진행 중 · Phase 4~7 예정 (완료 6/16 Tasks · 37.5%)
+**최종 업데이트:** 2026-06-17
+**진행 상황:** Phase 1·3·4 완료 · Phase 2 일부(Task 2-3) 진행 중 · Phase 7 일부(Task 7-2) 선행 · Phase 5~7 예정 (완료 10/16 Tasks · 62.5%)
+> Phase 4 는 코드 완료이며, 브라우저 종단 확인은 Task 2-3(Notion DB 속성 정합) 해소 후 가능.
