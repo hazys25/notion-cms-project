@@ -20,10 +20,10 @@
 | Phase | 끝나면 가능해지는 것 | 핵심 작업 수 | 상태 |
 |-------|---------------------|-------------|------|
 | 1. 프로젝트 기반 | Next.js 15 앱이 로컬에서 돌아가고, 공통 UI/테마 사용 가능 | 3 | ✅ |
-| 2. Notion 연동 기반 | 서버에서 Notion DB를 조회할 수 있고, 연결이 검증됨 | 3 | 🚧 |
+| 2. Notion 연동 기반 | 서버에서 Notion DB를 조회할 수 있고, 연결이 검증됨 | 3 | ✅ |
 | 3. 글 목록 (홈) | 발행된 글이 홈에 카드 그리드로 표시됨 | 3 | ✅ |
 | 4. 글 상세 | 카드 클릭 시 /posts/[id]에서 본문이 렌더링됨 | 4 | ✅ |
-| 5. 카테고리 필터 | /category/[category]에서 카테고리별 글 목록을 볼 수 있음 | 2 | ⏳ |
+| 5. 카테고리 필터 | /category/[category]에서 카테고리별 글 목록을 볼 수 있음 | 2 | ✅ |
 | 6. 검색 | 제목/태그 키워드 검색으로 글을 걸러낼 수 있음 | 2 | ⏳ |
 | 7. 스타일링 & 최적화 | 반응형/접근성/SEO/캐싱이 정리되어 배포 가능 상태 | 4 | ⏳ |
 
@@ -58,7 +58,7 @@
 
 ---
 
-## Phase 2: Notion 연동 기반 🚧
+## Phase 2: Notion 연동 기반 ✅
 
 > 서버에서 Notion 데이터베이스를 안전하게 조회할 수 있고, 키·DB 속성 구조가 검증된다.
 
@@ -74,13 +74,13 @@
   - 의존성: Task 2-1.
   - 근거(PRD): §5 Notion DB 구조, §9 환경변수.
 
-- **Task 2-3: Notion 웹 설정 완료 및 환경변수 입력** 🚧 (필수)
+- **Task 2-3: Notion 웹 설정 완료 및 환경변수 입력** ✅ (필수)
   - 무엇을: Notion 에서 Integration(통합) 생성 → `NOTION_API_KEY` 발급, 게시글 데이터베이스에 Integration을 Connection으로 추가, `NOTION_DATABASE_ID` 확인, `.env.local`에 두 값 입력. `pnpm verify:notion`으로 통과 확인.
   - 완료 기준(DoD): `pnpm verify:notion`이 오류 없이 "모든 검증 통과"를 출력하고, Notion DB의 속성 구조가 PRD §5와 일치한다(Title/Category/Tags/Published/Status 타입 모두 정확).
   - 의존성: Task 2-2.
   - 근거(PRD): §5, §9.
 
-  > 가정(명시): Notion 데이터베이스는 이미 생성되어 있거나 이 단계에서 신규 생성한다. DB 속성명과 타입은 PRD §5 사양을 그대로 따른다.
+  > ✅ 해소(2026-06-17): DB 속성을 `scripts/setup-notion-schema.mjs`(MCP 토큰 이슈 우회 — `.env.local` 직접 파싱)로 정합. 발견 사항: ① 속성은 v5 데이터소스에 있어 `verify-notion.mjs`가 `database.properties`(빈 값)를 보던 버그가 있었음 → `dataSources.retrieve` 기준으로 수정. ② `Status`가 `Statuus` 오타였음 → 정정. 샘플 발행 글 1건 시드 후 `pnpm verify:notion` "모든 검증 통과", `pnpm dev` 홈·상세·카테고리 실제 렌더 확인.
 
 ---
 
@@ -120,7 +120,7 @@
 
 > /posts/[id]에서 개별 글의 Notion 본문 블록이 렌더링된다. (F-2, PRD §8 단계 4)
 >
-> ℹ️ 코드 완료(lint·build 그린·리뷰 반영). 단, 브라우저에서의 **종단 렌더 확인은 Task 2-3(Notion DB 속성 정합) 해소 후** 가능하다 — 현재 DB 속성명이 PRD §5와 불일치해 조회가 빈 결과/에러로 graceful 처리된다(Phase 3와 동일 선행 조건).
+> ✅ 종단 확인 완료(2026-06-17): Task 2-3 해소 후 `pnpm dev` + Playwright 로 상세 페이지 실제 렌더 검증(제목/카테고리/태그/작성일 + 본문 블록: 단락·bold·목록·인용·구분선).
 
 - **Task 4-1: 단건 게시글 조회 함수 구현** ✅ (필수)
   - 무엇을: `src/lib/server/notion.ts`에 `getPostById(pageId: string): Promise<Post | null>` 추가. `notion.pages.retrieve({ page_id })`로 단건 조회 후 `toPost()`로 변환. Status가 "발행됨"이 아니면 `null` 반환(미발행 글 직접 접근 차단).
@@ -150,21 +150,25 @@
 
 ---
 
-## Phase 5: 카테고리 필터 페이지 ⏳
+## Phase 5: 카테고리 필터 페이지 ✅
 
 > /category/[category]에서 특정 카테고리에 속한 글 목록을 볼 수 있다. (F-3, PRD §6)
+>
+> ✅ 완료(2026-06-17): lint·build 그린 + Playwright 종단 확인(카테고리 페이지 필터링·빈 상태·배지 링크 분리·generateMetadata 타이틀).
 
-- **Task 5-1: 카테고리별 게시글 조회 함수 구현** ⏳ (필수)
+- **Task 5-1: 카테고리별 게시글 조회 함수 구현** ✅ (필수)
   - 무엇을: `src/lib/server/notion.ts`에 `getPostsByCategory(category: string): Promise<Post[]>` 추가. `dataSources.query`에 `filter: { and: [{ property: "Status", select: { equals: "발행됨" } }, { property: "Category", select: { equals: category } }] }` 적용, Published 내림차순 정렬.
   - 완료 기준(DoD): 카테고리명을 넘기면 해당 카테고리의 발행 글만 반환한다. 빈 카테고리는 빈 배열을 반환한다.
   - 의존성: Task 2-3, Task 3-1.
   - 근거(PRD): F-3, §5 Category 속성.
+  - ℹ️ 구현 메모: `getPublishedPosts`와 공통부(정렬·데이터소스 조회·`isFullPage` 가드·`toPost`)를 헬퍼 `queryPosts(filter)`로 묶어 중복 제거. 필터 타입은 SDK 에서 추출(`PostQueryFilter`).
 
-- **Task 5-2: 카테고리 목록 페이지 라우트 구현** ⏳ (필수)
+- **Task 5-2: 카테고리 목록 페이지 라우트 구현** ✅ (필수)
   - 무엇을: `src/app/category/[category]/page.tsx` — `params.category`(URL 디코딩 처리)로 `getPostsByCategory()` 호출, 홈과 동일한 카드 그리드 레이아웃 재사용, 페이지 상단에 현재 카테고리명 표시, 글 0건이면 안내 문구. ISR `revalidate = 60` 적용. **진입 경로는 PostCard의 카테고리 배지 클릭만**(2026-06-16 확정 — 헤더 전역 카테고리 메뉴는 두지 않음).
   - 완료 기준(DoD): 홈 카드의 카테고리 배지 클릭 시 `/category/[category]`로 이동해 해당 카테고리 글만 표시된다. `pnpm build`가 통과한다.
   - 의존성: Task 5-1, Task 3-2(PostCard 수정).
-  - ⚠️ 구현 주의: 현재 PostCard 는 카드 전체가 `/posts/[id]` 링크다. 배지를 카테고리 링크로 만들면 `<a>` 중첩이 되어 무효 HTML 이 된다. 카드 마크업을 조정해야 한다(예: 카드 링크를 `<a>` 대신 영역 분리, 또는 배지를 카드 링크 바깥 레이어로 빼고 카드 링크에 `pointer-events` 조정).
+  - ✅ 해소: PostCard 의 `<a>` 중첩 문제는 **stretched link 패턴**으로 해결 — 카드를 `relative` 컨테이너(`<article>`)로 두고 상세 링크를 `absolute inset-0`(z-0)으로 펼친 뒤, 카테고리 배지를 `relative z-10` 으로 그 위에 띄워 두 링크를 분리. 카테고리명은 `encodeURIComponent`(생성) ↔ `decodeURIComponent`(페이지) 로 왕복.
+  - ℹ️ 추가: 헤더 마크업이 홈/상세/카테고리 3곳에서 반복되어 `src/components/common/site-header.tsx`(SiteHeader)로 추출해 공유.
   - 근거(PRD): §6 카테고리 화면, F-3.
 
 ---
@@ -240,7 +244,7 @@
 
 | # | 항목 | 내용 | 심각도 |
 |---|------|------|--------|
-| R-1 | `@notionhq/client` v5 API 2계층 구조 | `dataSources.query` 사용이 정상 동작하는지 `pnpm verify:notion`으로 반드시 확인 필요. 검증 실패 시 Task 2-1의 `getNotionDataSourceId()` 로직 재검토. | 높음 |
+| R-1 | `@notionhq/client` v5 API 2계층 구조 | ✅ 해소(2026-06-17): `pnpm verify:notion` "모든 검증 통과" + 홈/상세/카테고리 실제 렌더 확인으로 `dataSources.query` 경로 정상 동작 검증됨. (속성은 데이터베이스가 아니라 데이터소스에 있다는 점도 확인 — verify 스크립트를 그에 맞게 수정.) | 높음→해소 |
 | R-2 | Notion 블록 렌더링 커버리지 | Notion 본문에 사용된 블록 타입이 MVP에서 구현한 타입 범위를 벗어나면 해당 블록이 표시되지 않음. 실제 DB 글의 블록 구성을 Task 4-2 전에 확인 권장. | 중간 |
 | R-3 | Notion API 레이트리밋 | 평균 초당 3회(3 req/s) 제한. ISR 60초 설정으로 완화하나, 빌드 시 `generateStaticParams`로 다수 페이지를 한꺼번에 생성할 경우 초과 가능. Task 7-3에서 재검토. | 중간 |
 | R-4 | 검색 확장성(클라이언트 필터링) | 클라이언트 필터링으로 확정(Q-2). 글이 수백 건 이상으로 늘어나면 성능 저하 가능 → 그 시점에 Notion Search API 서버 호출로 전환 검토(Phase 8). | 낮음 |
@@ -257,10 +261,12 @@
 
 | # | 질문 | 관련 Task |
 |---|------|-----------|
-| Q-1 | Notion DB 속성 구조가 PRD §5 사양(Title/Category/Tags/Published/Status, 각 타입)과 완전히 일치하는가? Notion 웹 설정·키 입력 후 `pnpm verify:notion` 실행 결과로 확인 필요(현재 보류). | Task 2-3 |
+| — | (없음) Q-1 은 아래 "결정 완료"로 이동. | — |
+
+| Q-1 | ✅ 해소(2026-06-17): Notion DB 속성을 PRD §5(Title/Category/Tags/Published/Status)에 맞춰 정합하고 `pnpm verify:notion` "모든 검증 통과" 확인. `Status` 오타(`Statuus`) 정정 + verify 스크립트의 데이터소스 속성 점검 버그 수정 포함. | Task 2-3 |
 
 ---
 
 **최종 업데이트:** 2026-06-17
-**진행 상황:** Phase 1·3·4 완료 · Phase 2 일부(Task 2-3) 진행 중 · Phase 7 일부(Task 7-2) 선행 · Phase 5~7 예정 (완료 10/16 Tasks · 62.5%)
-> Phase 4 는 코드 완료이며, 브라우저 종단 확인은 Task 2-3(Notion DB 속성 정합) 해소 후 가능.
+**진행 상황:** Phase 1~5 완료 · Phase 7 일부(Task 7-2) 선행 · Phase 6~7 예정 (완료 13/16 Tasks · 81%)
+> Phase 2~5 모두 브라우저 종단 확인 완료(홈·상세·카테고리 실제 렌더). 다음: Phase 6(검색) → Phase 7(스타일링/최적화/배포).

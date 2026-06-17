@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+# Playwright MCP 런타임 산출물(스냅샷/콘솔 로그) — 디버깅용 임시 파일이라 추적 제외
+/.playwright-mcp/
 
 # next.js
 /.next/

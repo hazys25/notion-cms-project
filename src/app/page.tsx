@@ -1,4 +1,4 @@
-import { ThemeToggle } from "@/components/common/theme-toggle";
+import { SiteHeader } from "@/components/common/site-header";
 import { PostCard } from "@/components/posts/post-card";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/lib/constants";
 import { getPublishedPosts } from "@/lib/server/notion";
@@ -44,17 +44,8 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* ── 상단 헤더 ───────────────────────────────────────────────
-          좌측: 사이트 이름(브랜드) · 우측: 테마 전환 버튼
-          sticky + 반투명 배경(backdrop-blur)으로 스크롤 시에도 상단에 고정 */}
-      <header className="bg-background/70 sticky top-0 z-50 border-b backdrop-blur">
-        <nav className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3">
-          <span className="font-heading text-sm font-semibold tracking-tight">
-            {SITE_NAME}
-          </span>
-          <ThemeToggle />
-        </nav>
-      </header>
+      {/* ── 상단 헤더(공통) ───────────────────────────────────────── */}
+      <SiteHeader />
 
       {/* ── 본문 ──────────────────────────────────────────────────── */}
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">

@@ -22,3 +22,19 @@ metadata:
 
 **Why:** 이후 비슷한 패턴의 코드 추가 시 같은 실수가 반복될 가능성이 높음.
 **How to apply:** API 라우트 추가 시 try/catch + errorResponse 패턴 준수 여부, 환경변수 ! 단언 대신 런타임 검증, 클라이언트 컴포넌트 fetch 후 응답 검증 확인.
+
+---
+
+## Phase 5 카테고리 필터 리뷰 (2026-06-17)
+
+### stretched link 패턴 반복 주의 포인트
+카드에 "전체 클릭 = 상세 이동"이면서 내부 요소(배지 등)를 별도 링크로 두는 stretched link 패턴을 사용할 때:
+- **`overflow-hidden` 필수**: `rounded-lg` 컨테이너에 `overflow-hidden`이 없으면 border-radius 바깥의 보이지 않는 모서리 영역에도 absolute inset-0 링크의 클릭이 걸린다.
+- **내부 인터랙티브 요소에 `relative z-10` 필수**: 링크가 아닌 태그 칩 등도 stretched link(z-0)가 그 위를 덮으므로, 나중에 링크로 만들 요소라면 사전에 `relative z-10`을 추가해 두어야 한다.
+- `sr-only` 텍스트로 스크린 리더용 접근성 이름 제공은 올바른 패턴.
+
+### 기능 일관성 패턴
+같은 도메인 요소(카테고리 배지)가 홈 카드에서는 링크가 되었는데 상세 페이지에서는 비링크 `<span>`으로 남으면 UX가 일관성이 없다. 인터랙션이 추가될 때 동일 요소가 쓰이는 모든 위치를 함께 업데이트해야 한다(`src/app/posts/[id]/page.tsx`의 카테고리 `<span>` 미수정 사례).
+
+### queryPosts 헬퍼 패턴 (좋은 예)
+`NonNullable<Parameters<Client["dataSources"]["query"]>[0]["filter"]>` 로 SDK 타입을 직접 추출하는 패턴은 SDK 버전업 시 자동으로 따라가는 타입 출처 일원화의 좋은 예. 이후 비슷한 SDK 파라미터 타입 추출 시 동일 패턴 사용.

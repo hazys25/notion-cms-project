@@ -113,23 +113,32 @@ export async function getNotionDataSourceId(): Promise<string> {
 const PUBLISHED_STATUS_VALUE = "발행됨"
 
 /**
- * 발행된 게시글 목록을 최신순으로 조회한다(글 목록 페이지의 데이터 소스).
+ * 글 조회 필터의 타입.
  *
- * - 필터: Status(select) 가 "발행됨" 인 글만
- * - 정렬: Published(date) 내림차순(최신 글이 위로)
- *
- * 반환 전에 원시 Notion 응답을 화면 친화적인 Post 타입으로 변환한다(toPost).
- *
- * @returns 발행 글 목록(최신순). 글이 없으면 빈 배열.
+ * dataSources.query 의 filter 인자 타입을 그대로 "빌려와서"(추출) 헬퍼와 호출부가 같은 타입을 공유한다.
+ * → Notion SDK 가 버전업되어 필터 스키마가 바뀌어도 이 한 줄만 따라가면 되도록(타입 출처 일원화).
  */
-export async function getPublishedPosts(): Promise<Post[]> {
+type PostQueryFilter = NonNullable<
+  Parameters<Client["dataSources"]["query"]>[0]["filter"]
+>
+
+/**
+ * 주어진 필터로 발행 글을 조회해 화면용 Post[] 로 변환하는 공통 헬퍼.
+ *
+ * 목록(getPublishedPosts)과 카테고리(getPostsByCategory)는 "필터만" 다르고
+ * 정렬(Published 내림차순)·데이터소스 조회·완전성 가드(isFullPage)·변환(toPost)은 동일하다.
+ * 그 공통부를 이 헬퍼에 모아 두 함수가 필터만 바꿔 재사용하게 한다(중복 제거).
+ *
+ * @param filter dataSources.query 에 넘길 필터(발행 상태/카테고리 등)
+ * @returns 조건에 맞는 발행 글 목록(최신순). 없으면 빈 배열.
+ */
+async function queryPosts(filter: PostQueryFilter): Promise<Post[]> {
   const notion = getNotionClient() // 인증된 Notion 클라이언트
   const dataSourceId = await getNotionDataSourceId() // 조회 대상 데이터소스 ID
 
   const response = await notion.dataSources.query({
     data_source_id: dataSourceId,
-    // Status 속성이 "발행됨" 인 행만 가져온다.
-    filter: { property: "Status", select: { equals: PUBLISHED_STATUS_VALUE } },
+    filter,
     // 작성일(Published) 기준 내림차순 → 최신 글이 목록 맨 위에 온다.
     sorts: [{ property: "Published", direction: "descending" }],
   })
@@ -137,6 +146,39 @@ export async function getPublishedPosts(): Promise<Post[]> {
   // 응답에는 완전한 페이지(PageObjectResponse) 외에 부분 객체가 섞일 수 있으므로,
   // isFullPage 로 "속성까지 채워진 완전한 페이지"만 걸러낸 뒤 Post 로 변환한다.
   return response.results.filter(isFullPage).map(toPost)
+}
+
+/**
+ * 발행된 게시글 목록을 최신순으로 조회한다(글 목록 페이지의 데이터 소스).
+ *
+ * - 필터: Status(select) 가 "발행됨" 인 글만
+ * - 정렬: Published(date) 내림차순(최신 글이 위로)
+ *
+ * @returns 발행 글 목록(최신순). 글이 없으면 빈 배열.
+ */
+export async function getPublishedPosts(): Promise<Post[]> {
+  // Status 속성이 "발행됨" 인 행만 가져온다.
+  return queryPosts({ property: "Status", select: { equals: PUBLISHED_STATUS_VALUE } })
+}
+
+/**
+ * 특정 카테고리에 속한 발행 글 목록을 최신순으로 조회한다(카테고리 필터 페이지의 데이터 소스).
+ *
+ * 홈 목록과 동일하게 "발행됨" 조건을 항상 깔고(미발행 글 노출 차단), 거기에 Category 일치 조건을
+ * AND 로 더한다 → 두 조건을 모두 만족하는 글만 통과한다.
+ *
+ * @param category 조회할 카테고리명(Category select 의 옵션 이름)
+ * @returns 해당 카테고리의 발행 글 목록(최신순). 없으면 빈 배열.
+ */
+export async function getPostsByCategory(category: string): Promise<Post[]> {
+  return queryPosts({
+    and: [
+      // 1) 발행 상태(목록과 동일한 노출 규칙)
+      { property: "Status", select: { equals: PUBLISHED_STATUS_VALUE } },
+      // 2) 카테고리 일치
+      { property: "Category", select: { equals: category } },
+    ],
+  })
 }
 
 /**

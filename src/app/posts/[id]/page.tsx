@@ -2,9 +2,8 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ThemeToggle } from "@/components/common/theme-toggle";
+import { SiteHeader } from "@/components/common/site-header";
 import { NotionBlocks } from "@/components/posts/notion-blocks";
-import { SITE_NAME } from "@/lib/constants";
 import { getPostById, getPostBlocks } from "@/lib/server/notion";
 
 /**
@@ -103,19 +102,8 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* ── 상단 헤더 ───────────────────────────────────────────────
-          홈과 동일한 sticky 헤더. 브랜드명을 홈 링크로 만들어 네비게이션을 겸한다. */}
-      <header className="bg-background/70 sticky top-0 z-50 border-b backdrop-blur">
-        <nav className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-3">
-          <Link
-            href="/"
-            className="font-heading text-sm font-semibold tracking-tight"
-          >
-            {SITE_NAME}
-          </Link>
-          <ThemeToggle />
-        </nav>
-      </header>
+      {/* ── 상단 헤더(공통) ───────────────────────────────────────── */}
+      <SiteHeader />
 
       {/* ── 본문 ────────────────────────────────────────────────────
           max-w-3xl: 글은 카드 그리드보다 좁게 잡아 한 줄 길이를 읽기 편하게 제한한다. */}
@@ -130,11 +118,16 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
 
         {/* ── 글 헤더(메타데이터) ─────────────────────────────────── */}
         <header className="mb-8">
-          {/* 카테고리 배지(값이 있을 때만) */}
+          {/* 카테고리 배지(값이 있을 때만) — 홈 카드와 동일하게 카테고리 목록으로 가는 링크.
+              상세 페이지엔 카드 같은 전체 링크가 없어 stretched link 처리 없이 단순 Link 로 충분하다.
+              encodeURIComponent: 카테고리명에 한글/공백이 있어도 안전한 URL 이 되도록 인코딩. */}
           {post.category && (
-            <span className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-medium">
+            <Link
+              href={`/category/${encodeURIComponent(post.category)}`}
+              className="bg-primary/10 text-primary hover:bg-primary/20 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors"
+            >
               {post.category}
-            </span>
+            </Link>
           )}
 
           {/* 제목 — 이 페이지의 유일한 h1(접근성·SEO 의 단일 h1 원칙) */}
