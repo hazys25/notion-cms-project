@@ -170,9 +170,28 @@ async function main() {
     "(제목 없음)"
   console.log(`${colorize.green("✓")} 데이터베이스 접근 성공: ${colorize.bold(databaseTitle)}\n`)
 
+  // ── 2.5단계: data_source_id 확보 후 데이터소스 속성 로드 ───────
+  // 🔴 v5 주의: 속성(컬럼)은 databases.retrieve 의 properties 가 아니라
+  //    데이터소스(data source)에 있다. 그래서 속성 검증은 반드시
+  //    dataSources.retrieve 의 properties 로 대조해야 한다(과거엔 database.properties
+  //    를 봐서 속성이 다 있어도 "없음"으로 잘못 보고하는 버그가 있었다).
+  const { id: dataSourceId, source: dataSourceOrigin } = resolveDataSourceId(
+    database,
+    notionDatabaseId,
+  )
+
+  let dataSource // dataSources.retrieve 응답
+  try {
+    dataSource = await notion.dataSources.retrieve({ data_source_id: dataSourceId })
+  } catch (error) {
+    console.log(colorize.red("❌ 데이터소스 조회(retrieve) 실패"))
+    printNotionError(error)
+    process.exit(1)
+  }
+
   // ── 3단계: 속성(컬럼) 구조 검증 ───────────────────────────────
   console.log(colorize.bold("📋 속성 구조 점검 (PRD 5장 기준)"))
-  const actualProperties = database.properties ?? {} // 실제 DB 속성 맵
+  const actualProperties = /** @type {any} */ (dataSource).properties ?? {} // 데이터소스 속성 맵
   let hasSchemaProblem = false // 하나라도 문제가 있으면 true
 
   for (const expected of EXPECTED_PROPERTIES) {
@@ -198,11 +217,8 @@ async function main() {
   }
   console.log("")
 
-  // ── 4단계: data_source_id 확보 후 실제 조회 테스트 ────────────
-  const { id: dataSourceId, source: dataSourceOrigin } = resolveDataSourceId(
-    database,
-    notionDatabaseId,
-  )
+  // ── 4단계: 실제 조회(query) 테스트 ────────────────────────────
+  // (dataSourceId 는 위 2.5단계에서 이미 확보했다)
   console.log(colorize.bold("🗄️  데이터소스 조회 테스트"))
   console.log(colorize.gray(`   data_source_id = ${dataSourceId}  [${dataSourceOrigin}]`))
 
